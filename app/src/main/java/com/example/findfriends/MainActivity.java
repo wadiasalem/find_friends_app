@@ -2,7 +2,11 @@ package com.example.findfriends;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.os.Bundle;
+import android.widget.Toast;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
@@ -16,10 +20,15 @@ import androidx.navigation.ui.NavigationUI;
 
 import com.example.findfriends.databinding.ActivityMainBinding;
 
-public class MainActivity extends AppCompatActivity {
+import java.util.List;
+
+public class MainActivity extends AppCompatActivity implements LocationListener {
 
     private ActivityMainBinding binding;
+    private LocationManager locationManager;
     public static boolean send_permission = false;
+    public static boolean location_permission = false;
+    public static Location location;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,15 +49,25 @@ public class MainActivity extends AppCompatActivity {
 
         if(ActivityCompat.checkSelfPermission(this,Manifest.permission.RECEIVE_SMS) == PackageManager.PERMISSION_DENIED){
             ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.SEND_SMS,
+                    new String[]{
+                            Manifest.permission.RECEIVE_SMS,
+                            Manifest.permission.SEND_SMS,
                             Manifest.permission.READ_SMS,
-                            Manifest.permission.RECEIVE_SMS},
+                            },
                     1);
         }else{
             send_permission = true;
         }
 
+        if(ActivityCompat.checkSelfPermission(this,Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_DENIED){
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    2);
+        }else{
+            location_permission = true;
+        }
 
+        getLocation();
 
     }
 
@@ -59,9 +78,34 @@ public class MainActivity extends AppCompatActivity {
             if(grantResults.length > 1 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
                 send_permission = true;
             }else {
-
+                finish();
+            }
+        }else if(requestCode == 2){
+            if(grantResults.length > 1 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
+                location_permission = true;
+            }else {
                 finish();
             }
         }
+    }
+
+    void getLocation() {
+        try {
+            locationManager = (LocationManager) getSystemService(MainActivity.LOCATION_SERVICE);
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5000, 5, this);
+        }
+        catch(SecurityException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void onLocationChanged(@NonNull Location location) {
+        this.location = location;
+    }
+
+    @Override
+    public void onProviderDisabled(@NonNull String provider) {
+        Toast.makeText(MainActivity.this, "Please Enable GPS", Toast.LENGTH_SHORT).show();
     }
 }
